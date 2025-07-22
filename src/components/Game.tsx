@@ -39,7 +39,13 @@ export function Game({ roomCode, playerName, onLeaveRoom }: GameProps) {
         where: { roomCode: roomCode },
         limit: 1
       })
-      return games[0]?.gameState || null
+      if (games[0]?.gameState) {
+        // Parse JSON string back to object
+        return typeof games[0].gameState === 'string' 
+          ? JSON.parse(games[0].gameState) 
+          : games[0].gameState
+      }
+      return null
     } catch (error) {
       console.error('Failed to get game state:', error)
       return null
@@ -48,12 +54,12 @@ export function Game({ roomCode, playerName, onLeaveRoom }: GameProps) {
 
   const updateGameState = useCallback(async (newGameState: GameState) => {
     try {
-      // Save to database
+      // Save to database with proper field names
       await blink.db.games.upsert({
         id: roomCode,
         roomCode: roomCode,
-        gameState: newGameState,
-        updatedAt: new Date()
+        gameState: JSON.stringify(newGameState), // Serialize as JSON string
+        updatedAt: new Date().toISOString()
       })
 
       // Broadcast to all players
